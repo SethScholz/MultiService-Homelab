@@ -13,7 +13,7 @@ through Docker Compose on its own Compose-managed network.
 | RAM | 64 GB DDR4 |
 | GPU | NVIDIA GTX 1650 Ti |
 | Storage | 2 × 6 TB HDD |
-| Storage configuration | RAID 1 (~6 TB usable) |
+| Storage configuration | Two RAID 1 arrays (~64 GiB root + ~5.33 TiB `/srv`) |
 | OS | Ubuntu Server |
 
 ## Services
