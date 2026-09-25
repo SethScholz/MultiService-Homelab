@@ -94,24 +94,45 @@ check_raid() {
             continue
         fi
 
+        local detail
         local state
         local active
         local total
+        local failed
 
-        state=$(mdadm --detail "$array" 2>/dev/null |
-            awk -F': ' '/State :/ {print $2}')
+        detail=$(sudo mdadm --detail "$array" 2>/dev/null)
 
-        active=$(mdadm --detail "$array" 2>/dev/null |
-            awk '/Active Devices/ {print $NF}')
+        state=$(echo "$detail" |
+            awk -F':' '/State[[:space:]]*:/ {
+                gsub(/^[ \t]+|[ \t]+$/, "", $2)
+                print $2
+            }')
 
-        total=$(mdadm --detail "$array" 2>/dev/null |
-            awk '/Raid Devices/ {print $NF}')
+        active=$(echo "$detail" |
+            awk -F':' '/Active Devices[[:space:]]*:/ {
+                gsub(/^[ \t]+|[ \t]+$/, "", $2)
+                print $2
+            }')
+
+        total=$(echo "$detail" |
+            awk -F':' '/Raid Devices[[:space:]]*:/ {
+                gsub(/^[ \t]+|[ \t]+$/, "", $2)
+                print $2
+            }')
+
+        failed=$(echo "$detail" |
+            awk -F':' '/Failed Devices[[:space:]]*:/ {
+                gsub(/^[ \t]+|[ \t]+$/, "", $2)
+                print $2
+            }')
 
         if [ "$active" = "$total" ] &&
-           echo "$state" | grep -q "clean"; then
-            ok "$array is healthy ($active/$total devices active)."
+           [ "$failed" = "0" ] &&
+           { [ "$state" = "clean" ] || [ "$state" = "active" ]; }; then
+
+            ok "$array is healthy ($active/$total devices active, 0 failed)."
         else
-            critical "$array is degraded or unhealthy ($state, $active/$total devices active)."
+            critical "$array is degraded or unhealthy (state: ${state:-unknown}, active: ${active:-unknown}/$total, failed: ${failed:-unknown})."
         fi
     done
 
