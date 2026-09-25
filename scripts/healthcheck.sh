@@ -76,6 +76,55 @@ check_docker() {
 }
 
 # ----------------------------------------
+# Service Responsiveness
+# ----------------------------------------
+
+check_services() {
+    echo "Service Responsiveness"
+    echo "---------------------"
+
+    check_http_service() {
+        local name="$1"
+        local port="$2"
+        local expected="$3"
+
+        local response
+
+        response=$(curl \
+            --silent \
+            --output /dev/null \
+            --write-out '%{http_code}' \
+            --max-time 5 \
+            "http://localhost:${port}/")
+
+        if [ "$response" = "$expected" ]; then
+            ok "$name is responding on port $port (HTTP $response)."
+        else
+            critical "$name returned HTTP $response on port $port (expected $expected)."
+        fi
+    }
+
+    check_tcp_service() {
+        local name="$1"
+        local port="$2"
+
+        if timeout 5 bash -c "</dev/tcp/127.0.0.1/$port" 2>/dev/null; then
+            ok "$name is accepting TCP connections on port $port."
+        else
+            critical "$name is not accepting TCP connections on port $port."
+        fi
+    }
+
+    check_http_service "Jellyfin" 8096 "302"
+    check_http_service "Sonarr" 8989 "401"
+    check_http_service "Bazarr" 6767 "200"
+
+    check_tcp_service "Minecraft" 25565
+
+    echo
+}
+
+# ----------------------------------------
 # RAID
 # ----------------------------------------
 
