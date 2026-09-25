@@ -98,7 +98,7 @@ The script checks:
 - System load
 - Memory utilization
 
-The script returns standard exit codes:
+The script returns the following exit codes:
 
 | Exit code | Status |
 |---:|---|
@@ -121,7 +121,8 @@ security restrictions:
 - Uses a temporary `tmpfs` filesystem for `/tmp`
 
 These settings reduce the privileges available to the Minecraft
-workload if the application is compromised.
+container and limit some operations it can perform on the host if the
+workload is compromised.
 
 ## Documentation
 
