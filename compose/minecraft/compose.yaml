@@ -1,0 +1,31 @@
+services:
+  minecraft:
+    image: eclipse-temurin:17-jre
+    container_name: minecraft
+    working_dir: /data
+
+    user: "1000:1000"
+
+    command: ["./run.sh", "nogui", "--bonusChest"]
+
+    ports:
+      - "25565:25565/tcp"
+
+    volumes:
+      - /home/serelor/minecraft-serv:/data
+
+    restart: unless-stopped
+
+    stdin_open: true
+    tty: true
+
+    mem_limit: 10g
+
+    security_opt:
+      - no-new-privileges:true
+
+    cap_drop:
+      - ALL
+
+    tmpfs:
+      - /tmp:exec
