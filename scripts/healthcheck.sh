@@ -278,6 +278,7 @@ echo "========================================"
 echo
 
 check_docker
+check_services
 check_raid
 check_filesystems
 check_load
