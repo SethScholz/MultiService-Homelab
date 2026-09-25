@@ -84,55 +84,35 @@ check_raid() {
     echo "----"
 
     local arrays=(
-        "/dev/md0"
-        "/dev/md1"
+        "md0"
+        "md1"
     )
 
     for array in "${arrays[@]}"; do
-        if [ ! -e "$array" ]; then
-            critical "$array does not exist."
+        local line
+        local status
+
+        line=$(grep "^${array} :" /proc/mdstat)
+
+        if [ -z "$line" ]; then
+            critical "/dev/$array is not active."
+            continue
+        fi
+
+        status=$(echo "$line" | awk '{print $3}')
+
+        if [ "$status" != "active" ]; then
+            critical "/dev/$array is not active (state: $status)."
             continue
         fi
 
         local detail
-        local state
-        local active
-        local total
-        local failed
+        detail=$(grep -A1 "^${array} :" /proc/mdstat | tail -n 1)
 
-        detail=$(sudo mdadm --detail "$array" 2>/dev/null)
-
-        state=$(echo "$detail" |
-            awk -F':' '/State[[:space:]]*:/ {
-                gsub(/^[ \t]+|[ \t]+$/, "", $2)
-                print $2
-            }')
-
-        active=$(echo "$detail" |
-            awk -F':' '/Active Devices[[:space:]]*:/ {
-                gsub(/^[ \t]+|[ \t]+$/, "", $2)
-                print $2
-            }')
-
-        total=$(echo "$detail" |
-            awk -F':' '/Raid Devices[[:space:]]*:/ {
-                gsub(/^[ \t]+|[ \t]+$/, "", $2)
-                print $2
-            }')
-
-        failed=$(echo "$detail" |
-            awk -F':' '/Failed Devices[[:space:]]*:/ {
-                gsub(/^[ \t]+|[ \t]+$/, "", $2)
-                print $2
-            }')
-
-        if [ "$active" = "$total" ] &&
-           [ "$failed" = "0" ] &&
-           { [ "$state" = "clean" ] || [ "$state" = "active" ]; }; then
-
-            ok "$array is healthy ($active/$total devices active, 0 failed)."
+        if echo "$detail" | grep -q '\[2/2\] \[UU\]'; then
+            ok "/dev/$array is healthy (2/2 devices active)."
         else
-            critical "$array is degraded or unhealthy (state: ${state:-unknown}, active: ${active:-unknown}/$total, failed: ${failed:-unknown})."
+            critical "/dev/$array is degraded or rebuilding: $detail"
         fi
     done
 
